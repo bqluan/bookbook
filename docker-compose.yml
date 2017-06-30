@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+
+  mariadb:
+    container_name: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    image: mariadb:10.1
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./database/initdb.d:/docker-entrypoint-initdb.d
+      - /dockerv/github.com/bqluan/bookbook/database:/var/lib/mysql
+
+  backend:
+    command: [sleep, infinity]
+    container_name: backend
+    depends_on:
+      - mariadb
+    image: bookbook-dev
+    volumes:
+      - ./backend:/go/src/github.com/bqluan/bookbook
+    working_dir: /go/src/github.com/bqluan/bookbook
+
+  frontend:
+    command: [npm, run, dev]
+    container_name: frontend
+    depends_on:
+      - backend
+    image: node:7-alpine
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./frontend:/work
+    working_dir: /work
