@@ -1,6 +1,6 @@
 bookbook
 ========
-A book store project
+A bookstore project
 
 ### How to get started? ###
 ```

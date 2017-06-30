@@ -1,6 +1,6 @@
 # bookbook
 
-> A book store project
+> A bookstore project
 
 ## Build Setup
 
