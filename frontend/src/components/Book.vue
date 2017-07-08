@@ -15,7 +15,7 @@
       </md-card>
       <md-bottom-bar>
         <template v-if="borrowedAt">
-          <md-button disabled>您在今天借阅了这本书</md-button>
+          <md-button disabled>您在{{ diffInDays }}借阅了这本书</md-button>
         </template>
         <template v-else-if="book.qty <= 0">
           <md-button disabled>这本书已经被借走了</md-button>
@@ -33,6 +33,43 @@
 </template>
 
 <script>
+import moment from 'moment'
+
+moment.locale('zh-cn')
+moment.updateLocale('zh-cn', {
+  calendar: {
+    sameDay: '[今天]LT',
+    nextDay: '[明天]LT',
+    nextWeek: '[下]dddLT',
+    lastDay: '[昨天]LT',
+    lastWeek: '[上]dddLT',
+    thisWeek: '[这]dddLT',
+    sameElse: 'L'
+  }
+})
+moment.calendarFormat = function (myMoment, now) {
+  const diff = myMoment.diff(now, 'days', true)
+  if (diff >= 0 && diff < 1) {
+    return 'sameDay'
+  }
+  if (diff >= -1 && diff < 0) {
+    return 'lastDay'
+  }
+  if (diff >= 1 && diff < 2) {
+    return 'nextDay'
+  }
+  if (myMoment.week() === now.week() && myMoment.year() === now.year()) {
+    return 'thisWeek'
+  }
+  if (myMoment.week() === (now.week() - 1) && myMoment.year() === now.year()) {
+    return 'lastWeek'
+  }
+  if (myMoment.week() === (now.week() + 1) && myMoment.year() === now.year()) {
+    return 'nextWeek'
+  }
+  return 'sameElse'
+}
+
 export default {
   name: 'book',
   data () {
@@ -40,6 +77,14 @@ export default {
       book: null,
       borrowedAt: null,
       needConfirmation: false
+    }
+  },
+  computed: {
+    diffInDays () {
+      if (!this.borrowedAt) {
+        return ''
+      }
+      return moment(this.borrowedAt).calendar()
     }
   },
   created () {
@@ -58,6 +103,11 @@ export default {
       this.needConfirmation = false
       this.$http.get(`/api/book/${this.$route.params.id}`).then(resp => {
         this.book = resp.body
+      })
+      this.$http.get(`/api/borrow?book_id=${this.$route.params.id}&wechat_id=abcdefg`).then(resp => {
+        if (resp.body && resp.body.length > 0) {
+          this.borrowedAt = resp.body[0].CreatedAt
+        }
       })
     },
     borrow () {
