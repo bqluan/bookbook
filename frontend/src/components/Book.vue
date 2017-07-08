@@ -13,21 +13,23 @@
           {{ book.Desc }}
         </md-card-content>
       </md-card>
-      <md-bottom-bar>
-        <template v-if="borrowedAt">
-          <md-button disabled>您在{{ diffInDays }}借阅了这本书</md-button>
-        </template>
-        <template v-else-if="book.qty <= 0">
-          <md-button disabled>这本书已经被借走了</md-button>
-        </template>
-        <template v-else-if="needConfirmation">
-          <md-button class="md-raised md-primary" @click="ok">确定</md-button>
-          <md-button class="md-raised md-accent" @click="cancel">取消</md-button>
-        </template>
-        <template v-else>
-          <md-button class="md-raised md-primary" @click="borrow">我要借书</md-button>
-        </template>
-      </md-bottom-bar>
+      <template v-if="borrowedAt !== undefined">
+        <md-bottom-bar>
+          <template v-if="borrowedAt">
+            <md-button disabled>您在{{ diffInDays }}借阅了这本书</md-button>
+          </template>
+          <template v-else-if="book.qty <= 0">
+            <md-button disabled>这本书已经被借走了</md-button>
+          </template>
+          <template v-else-if="needConfirmation">
+            <md-button class="md-raised md-primary" @click="ok">确定</md-button>
+            <md-button class="md-raised md-accent" @click="cancel">取消</md-button>
+          </template>
+          <template v-else>
+            <md-button class="md-raised md-primary" @click="borrow">我要借书</md-button>
+          </template>
+        </md-bottom-bar>
+      </template>
     </template>
   </div>
 </template>
@@ -74,8 +76,8 @@ export default {
   name: 'book',
   data () {
     return {
-      book: null,
-      borrowedAt: null,
+      book: undefined,
+      borrowedAt: undefined,
       needConfirmation: false
     }
   },
@@ -98,8 +100,8 @@ export default {
   },
   methods: {
     fetchData () {
-      this.book = null
-      this.borrowedAt = null
+      this.book = undefined
+      this.borrowedAt = undefined
       this.needConfirmation = false
       this.$http.get(`/api/book/${this.$route.params.id}`).then(resp => {
         this.book = resp.body
@@ -107,6 +109,9 @@ export default {
       this.$http.get(`/api/borrow?book_id=${this.$route.params.id}&wechat_id=abcdefg`).then(resp => {
         if (resp.body && resp.body.length > 0) {
           this.borrowedAt = resp.body[0].CreatedAt
+        } else {
+          // `null` means this book is not borrowed by this user
+          this.borrowedAt = null
         }
       })
     },
