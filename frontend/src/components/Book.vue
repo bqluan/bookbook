@@ -78,7 +78,8 @@ export default {
     return {
       book: undefined,
       borrowedAt: undefined,
-      needConfirmation: false
+      needConfirmation: false,
+      openid: undefined
     }
   },
   computed: {
@@ -106,7 +107,7 @@ export default {
       this.$http.get(`/api/book/${this.$route.params.id}`).then(resp => {
         this.book = resp.body
       })
-      this.$http.get(`/api/borrow?book_id=${this.$route.params.id}&wechat_id=abcdefg`).then(resp => {
+      this.$http.get(`/api/borrow?book_id=${this.$route.params.id}&wechat_id=${this.$route.query.openid}`).then(resp => {
         if (resp.body && resp.body.length > 0) {
           this.borrowedAt = resp.body[0].CreatedAt
         } else {
@@ -121,7 +122,7 @@ export default {
     ok () {
       const borrow = {
         BookID: Number(this.$route.params.id),
-        WechatID: 'abcdefg'
+        WechatID: this.$route.query.openid
       }
       this.$http.post('/api/borrow', borrow).then(resp => {
         this.needConfirmation = false

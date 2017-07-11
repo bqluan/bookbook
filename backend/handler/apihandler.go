@@ -26,6 +26,7 @@ func CreateAPIHandler(db *sql.DB) (http.Handler, error) {
 	r.GET("/book/:id", wrap(h.GetBookDetail))
 	r.GET("/borrow", wrap(h.GetBorrowList))
 	r.POST("/borrow", wrap(h.Borrow))
+	r.GET("/code2openid", wrap(h.CodeToOpenID))
 
 	return r, nil
 }
