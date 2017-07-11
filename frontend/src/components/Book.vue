@@ -18,7 +18,7 @@
           <template v-if="borrowedAt">
             <md-button disabled>您在{{ diffInDays }}借阅了这本书</md-button>
           </template>
-          <template v-else-if="book.qty <= 0">
+          <template v-else-if="book.Qty <= 0">
             <md-button disabled>这本书已经被借走了</md-button>
           </template>
           <template v-else-if="needConfirmation">

@@ -20,12 +20,38 @@ func (h *apiHandler) Borrow(w http.ResponseWriter, r *http.Request) {
 	}
 	b.CreatedAt = time.Now()
 	b.UpdatedAt = b.CreatedAt
-	stmt, err := h.db.Prepare("insert into borrows (created_at, updated_at, book_id, wechat_id) values (?, ?, ?, ?)")
+
+	tx, err := h.db.Begin()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("handler: %s", err), http.StatusInternalServerError)
 		return
 	}
-	res, err := stmt.Exec(b.CreatedAt, b.UpdatedAt, b.BookID, b.WechatID)
+	done := false
+	defer func() {
+		if !done {
+			tx.Rollback()
+		}
+	}()
+	stmt, err := tx.Prepare("update books set qty = qty - 1 where id = ? and qty > 0")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("handler: %s", err), http.StatusInternalServerError)
+		return
+	}
+	res, err := stmt.Exec(b.BookID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("handler: %s", err), http.StatusInternalServerError)
+		return
+	}
+	if cnt, err := res.RowsAffected(); err != nil || cnt == 0 {
+		http.Error(w, fmt.Sprintf("handler: %s(%d rows affected)", err, cnt), http.StatusInternalServerError)
+		return
+	}
+	stmt, err = tx.Prepare("insert into borrows (created_at, updated_at, book_id, wechat_id) values (?, ?, ?, ?)")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("handler: %s", err), http.StatusInternalServerError)
+		return
+	}
+	res, err = stmt.Exec(b.CreatedAt, b.UpdatedAt, b.BookID, b.WechatID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("handler: %s", err), http.StatusInternalServerError)
 		return
@@ -35,8 +61,15 @@ func (h *apiHandler) Borrow(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("handler: %s", err), http.StatusInternalServerError)
 		return
 	}
+	if err = tx.Commit(); err != nil {
+		http.Error(w, fmt.Sprintf("handler: %s", err), http.StatusInternalServerError)
+		return
+	}
+
 	b.ID = uint(id)
 	httpx.JSON(w, b, http.StatusCreated)
+
+	done = true
 }
 
 func (h *apiHandler) GetBorrowList(w http.ResponseWriter, r *http.Request) {
